@@ -7,6 +7,16 @@
     <groupId>com.panilya.jdepchisel</groupId>
     <artifactId>jdepchisel</artifactId>
     <version>1.0-SNAPSHOT</version>
+    <name>jdepchisel</name>
+
+    <packaging>jar</packaging>
+
+    <developers>
+        <developer>
+            <name>Ilya Pantsyr</name>
+            <email>panilyau@gmail.com</email>
+        </developer>
+    </developers>
 
     <properties>
         <maven.compiler.source>11</maven.compiler.source>
