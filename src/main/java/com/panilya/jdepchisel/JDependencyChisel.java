@@ -288,7 +288,6 @@ public class JDependencyChisel {
             }
         }
         names.add(dst.toString());
-        return;
     }
 
     private static void addClassNamesToDependencySet(HashSet<String> names,
