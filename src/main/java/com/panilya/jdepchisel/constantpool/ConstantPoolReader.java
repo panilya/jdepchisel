@@ -8,7 +8,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
-import static com.panilya.jdepchisel.classreader.ClassReader.readClassBytes;
+import com.panilya.jdepchisel.classreader.ClassReader;
 
 public class ConstantPoolReader {
 
@@ -28,7 +28,7 @@ public class ConstantPoolReader {
         }
         return mapClassNamesToClasses(
                 adjustedClassToCheck,
-                getDependenciesFromClassBytes(readClassBytes(adjustedClassToCheck)));
+                getDependenciesFromClassBytes(ClassReader.readClassBytes(adjustedClassToCheck)));
     }
 
     private static Class<?> adjustSourceClassIfArray(final Class<?> sourceClass) {
