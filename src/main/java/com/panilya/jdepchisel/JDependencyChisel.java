@@ -83,9 +83,43 @@ public class JDependencyChisel {
 
     private static void flagConstantPoolItemsAsDependencies(ByteBuffer byteBuffer,
                                                             final int constantPoolItemCount, ConstantPoolItemFlags flags) {
-        for (int c = 1; c < constantPoolItemCount; c++) {
-            c = readOneConstantPoolItemAndSetFlagIfClassOrNamedType(byteBuffer,
-                    flags, c);
+        for (int currentConstantIndex = 1; currentConstantIndex < constantPoolItemCount; currentConstantIndex++) {
+            switch (byteBuffer.get()) {
+                case ConstantPoolTags.CONSTANT_Utf8:
+                    skipPastVariableLengthString(byteBuffer);
+                    break;
+                case ConstantPoolTags.CONSTANT_Integer:
+                case ConstantPoolTags.CONSTANT_Float:
+                case ConstantPoolTags.CONSTANT_Fieldref:
+                case ConstantPoolTags.CONSTANT_Methodref:
+                case ConstantPoolTags.CONSTANT_InterfaceMethodref:
+                case ConstantPoolTags.CONSTANT_InvokeDynamic:
+                    skipBytes(byteBuffer, 4);
+                    break;
+                case ConstantPoolTags.CONSTANT_Long:
+                case ConstantPoolTags.CONSTANT_Double:
+                    skipBytes(byteBuffer, 8);
+                    currentConstantIndex++;
+                    break;
+                case ConstantPoolTags.CONSTANT_String:
+                    skipBytes(byteBuffer, 2);
+                    break;
+                case ConstantPoolTags.CONSTANT_NameAndType:
+                    skipBytes(byteBuffer, 2);// skip name, fall through to flag as a
+                    // named type:
+                case ConstantPoolTags.CONSTANT_MethodType:
+                    flags.isNamedType.set(byteBuffer.getChar()); // flag as named type
+                    break;
+                case ConstantPoolTags.CONSTANT_Class:
+                    flags.isClass.set(byteBuffer.getChar()); // flag as class
+                    break;
+                case ConstantPoolTags.CONSTANT_MethodHandle:
+                    skipBytes(byteBuffer, 3);
+                    break;
+                default:
+                    throw new IllegalArgumentException("constant pool item type "
+                            + (byteBuffer.get(byteBuffer.position() - 1) & 0xff));
+            }
         }
         skipPastAccessFlagsThisClassAndSuperClass(byteBuffer);
         skipInterfaces(byteBuffer);
@@ -208,53 +242,6 @@ public class JDependencyChisel {
      */
     private static void returnBufferToStartOfConstantPool(ByteBuffer byteBuffer) {
         byteBuffer.position(10);
-    }
-
-    /**
-     * @param byteBuffer
-     * @param currentConstantIndex
-     * @return
-     */
-    private static int readOneConstantPoolItemAndSetFlagIfClassOrNamedType(
-            ByteBuffer byteBuffer, ConstantPoolItemFlags flags,
-            int currentConstantIndex) {
-        switch (byteBuffer.get()) {
-            case ConstantPoolTags.CONSTANT_Utf8:
-                skipPastVariableLengthString(byteBuffer);
-                break;
-            case ConstantPoolTags.CONSTANT_Integer:
-            case ConstantPoolTags.CONSTANT_Float:
-            case ConstantPoolTags.CONSTANT_Fieldref:
-            case ConstantPoolTags.CONSTANT_Methodref:
-            case ConstantPoolTags.CONSTANT_InterfaceMethodref:
-            case ConstantPoolTags.CONSTANT_InvokeDynamic:
-                skipBytes(byteBuffer, 4);
-                break;
-            case ConstantPoolTags.CONSTANT_Long:
-            case ConstantPoolTags.CONSTANT_Double:
-                skipBytes(byteBuffer, 8);
-                currentConstantIndex++;
-                break;
-            case ConstantPoolTags.CONSTANT_String:
-                skipBytes(byteBuffer, 2);
-                break;
-            case ConstantPoolTags.CONSTANT_NameAndType:
-                skipBytes(byteBuffer, 2);// skip name, fall through to flag as a
-                // named type:
-            case ConstantPoolTags.CONSTANT_MethodType:
-                flags.isNamedType.set(byteBuffer.getChar()); // flag as named type
-                break;
-            case ConstantPoolTags.CONSTANT_Class:
-                flags.isClass.set(byteBuffer.getChar()); // flag as class
-                break;
-            case ConstantPoolTags.CONSTANT_MethodHandle:
-                skipBytes(byteBuffer, 3);
-                break;
-            default:
-                throw new IllegalArgumentException("constant pool item type "
-                        + (byteBuffer.get(byteBuffer.position() - 1) & 0xff));
-        }
-        return currentConstantIndex;
     }
 
     private static void skipBytes(ByteBuffer byteBuffer, int bytesToSkip) {
