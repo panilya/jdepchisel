@@ -1,24 +1,25 @@
 package com.panilya.jdepchisel;
 
 import com.panilya.jdepchisel.constantpool.ConstantPoolReader;
+import com.panilya.jdepchisel.graph.DependencyGraph;
+import com.panilya.jdepchisel.graph.DependencyGraphCreator;
 
-import java.util.Set;
+import java.util.Map;
 
 public class JDependencyChisel {
 
     public static void main(String[] args) {
         try {
-            // Get dependencies for my class:
-            Set<Class<?>> dependencies = ConstantPoolReader.getDependencies(Class
-                    .forName("com.panilya.jdepchisel.JDependencyChisel"));
-
-            // Print the full class name for each interesting dependency:
-            dependencies
-                    .stream()
-                    .filter(clazz -> !clazz.getCanonicalName().startsWith(
-                            "java.lang")) // do not show java.lang dependencies,
-                    // which add clutter
-                    .forEach(c -> System.out.println(c.getCanonicalName()));
+            DependencyGraphCreator graphCreator = new DependencyGraphCreator();
+            DependencyGraph dependencyGraph = graphCreator.generate("com.panilya.jdepchisel.graph.DependencyGraph"); // Enter root class e.g. entry point for deps searching
+            for (var classNodeEntry : dependencyGraph.processedClasses.entrySet()) {
+                var className = classNodeEntry.getKey();
+                var classValue = classNodeEntry.getValue().dependsOn;
+                for (var depends : classValue) {
+                    // Prints output in DOT language in order to display Dependency Graph in Graphviz
+                    System.out.println("\"" + className + "\" -> \"" + depends.classFile.className + "\";");
+                }
+            }
         } catch (Exception e) {
             e.printStackTrace();
         }
