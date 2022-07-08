@@ -1,6 +1,6 @@
 package com.panilya.jdepchisel.classreader;
 
-import com.panilya.jdepchisel.JDependencyChisel;
+import com.panilya.jdepchisel.constantpool.ConstantPoolReader;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -16,7 +16,7 @@ public class ClassReader {
     public ClassReader() { }
 
     public static ByteBuffer readClassBytes(Class<?> from) throws IOException {
-        JDependencyChisel.Buffer readBuf = new JDependencyChisel.Buffer();
+        ConstantPoolReader.Buffer readBuf = new ConstantPoolReader.Buffer();
         try (InputStream is = from.getResourceAsStream(from.getSimpleName()
                 + ".class")) {
             int byteCountFromLastRead = 0;
@@ -30,7 +30,7 @@ public class ClassReader {
         return readBuf.toByteBuffer();
     }
 
-    private static void adjustBufferSize(JDependencyChisel.Buffer readBuf, InputStream is)
+    private static void adjustBufferSize(ConstantPoolReader.Buffer readBuf, InputStream is)
             throws IOException {
         int bufferSize = Math.max(is.available() + 100, 100);
         if (readBuf.buf == null) {
