@@ -72,60 +72,60 @@ public class JDependencyChisel {
     }
 
     private static Set<String> getDependenciesFromClassBytes(
-            ByteBuffer readBuffer) {
-        verifyMagicFileTypeHeader(readBuffer);
-        final int constantPoolItemCount = getConstantPoolItemCount(readBuffer);
+            ByteBuffer byteBuffer) {
+        verifyMagicFileTypeHeader(byteBuffer);
+        final int constantPoolItemCount = getConstantPoolItemCount(byteBuffer);
         ConstantPoolItemFlags flags = new ConstantPoolItemFlags(constantPoolItemCount);
-        flagConstantPoolItemsAsDependencies(readBuffer, constantPoolItemCount, flags);
-        return extractClassNamesFromConstantsBasedOnFlags(readBuffer,
+        flagConstantPoolItemsAsDependencies(byteBuffer, constantPoolItemCount, flags);
+        return extractClassNamesFromConstantsBasedOnFlags(byteBuffer,
                 constantPoolItemCount, flags);
     }
 
-    private static void flagConstantPoolItemsAsDependencies(ByteBuffer readBuffer,
+    private static void flagConstantPoolItemsAsDependencies(ByteBuffer byteBuffer,
                                                             final int constantPoolItemCount, ConstantPoolItemFlags flags) {
         for (int c = 1; c < constantPoolItemCount; c++) {
-            c = readOneConstantPoolItemAndSetFlagIfClassOrNamedType(readBuffer,
+            c = readOneConstantPoolItemAndSetFlagIfClassOrNamedType(byteBuffer,
                     flags, c);
         }
-        skipPastAccessFlagsThisClassAndSuperClass(readBuffer);
-        skipInterfaces(readBuffer);
-        flagFieldsAndMethodsAsNamedTypes(readBuffer, flags.isNamedType);
+        skipPastAccessFlagsThisClassAndSuperClass(byteBuffer);
+        skipInterfaces(byteBuffer);
+        flagFieldsAndMethodsAsNamedTypes(byteBuffer, flags.isNamedType);
     }
 
-    private static int getConstantPoolItemCount(ByteBuffer readBuffer) {
-        setCursorToConstantPoolCountPosition(readBuffer);
-        return readBuffer.getChar();
+    private static int getConstantPoolItemCount(ByteBuffer byteBuffer) {
+        setCursorToConstantPoolCountPosition(byteBuffer);
+        return byteBuffer.getChar();
     }
 
     /**
-     * @param readBuffer
+     * @param byteBuffer
      */
-    private static void skipInterfaces(ByteBuffer readBuffer) {
-        readBuffer.position(readBuffer.getChar() * 2 + readBuffer.position());
+    private static void skipInterfaces(ByteBuffer byteBuffer) {
+        byteBuffer.position(byteBuffer.getChar() * 2 + byteBuffer.position());
     }
 
     /**
-     * @param readBuffer
+     * @param byteBuffer
      */
     private static void skipPastAccessFlagsThisClassAndSuperClass(
-            ByteBuffer readBuffer) {
-        skipBytes(readBuffer, 6);
+            ByteBuffer byteBuffer) {
+        skipBytes(byteBuffer, 6);
     }
 
     /**
-     * @param readBuffer
+     * @param byteBuffer
      * @param numberOfConstants
      * @return
      * @throws AssertionError
      */
     private static HashSet<String> extractClassNamesFromConstantsBasedOnFlags(
-            ByteBuffer readBuffer, final int numberOfConstants, ConstantPoolItemFlags flags) throws AssertionError {
+            ByteBuffer byteBuffer, final int numberOfConstants, ConstantPoolItemFlags flags) throws AssertionError {
         HashSet<String> names = new HashSet<>();
-        returnBufferToStartOfConstantPool(readBuffer);
+        returnBufferToStartOfConstantPool(byteBuffer);
         for (int constantPoolIndex = 1; constantPoolIndex < numberOfConstants; constantPoolIndex++) {
-            switch (readBuffer.get()) {
+            switch (byteBuffer.get()) {
                 case ConstantPoolTags.CONSTANT_Utf8:
-                    readClassNamesInUTF8Value(readBuffer, flags,
+                    readClassNamesInUTF8Value(byteBuffer, flags,
                             names, constantPoolIndex);
                     break;
                 case ConstantPoolTags.CONSTANT_Integer:
@@ -135,20 +135,20 @@ public class JDependencyChisel {
                 case ConstantPoolTags.CONSTANT_InterfaceMethodref:
                 case ConstantPoolTags.CONSTANT_NameAndType:
                 case ConstantPoolTags.CONSTANT_InvokeDynamic:
-                    skipBytes(readBuffer, 4);
+                    skipBytes(byteBuffer, 4);
                     break;
                 case ConstantPoolTags.CONSTANT_Long:
                 case ConstantPoolTags.CONSTANT_Double:
-                    skipBytes(readBuffer, 8);
+                    skipBytes(byteBuffer, 8);
                     constantPoolIndex++; // long or double counts as 2 items
                     break;
                 case ConstantPoolTags.CONSTANT_String:
                 case ConstantPoolTags.CONSTANT_Class:
                 case ConstantPoolTags.CONSTANT_MethodType:
-                    skipBytes(readBuffer, 2);
+                    skipBytes(byteBuffer, 2);
                     break;
                 case ConstantPoolTags.CONSTANT_MethodHandle:
-                    skipBytes(readBuffer, 3);
+                    skipBytes(byteBuffer, 3);
                     break;
                 default:
                     throw new AssertionError();
@@ -158,69 +158,69 @@ public class JDependencyChisel {
     }
 
     /**
-     * @param readBuffer
+     * @param byteBuffer
      * @param dependencyClassNames
      * @param constantNumber
      */
-    private static void readClassNamesInUTF8Value(ByteBuffer readBuffer,
+    private static void readClassNamesInUTF8Value(ByteBuffer byteBuffer,
                                                   ConstantPoolItemFlags flags,
                                                   HashSet<String> dependencyClassNames, int constantNumber) {
-        int strSize = readBuffer.getChar(), strStart = readBuffer.position();
+        int strSize = byteBuffer.getChar(), strStart = byteBuffer.position();
         boolean multipleNames = flags.isNamedType.get(constantNumber);
         if (flags.isClass.get(constantNumber)) {
-            if (readBuffer.get(readBuffer.position()) == ARRAY_START_CHAR) {
+            if (byteBuffer.get(byteBuffer.position()) == ARRAY_START_CHAR) {
                 multipleNames = true;
             } else {
-                addClassNameToDependencySet(dependencyClassNames, readBuffer,
+                addClassNameToDependencySet(dependencyClassNames, byteBuffer,
                         strStart, strSize);
             }
         }
         if (multipleNames) {
-            addClassNamesToDependencySet(dependencyClassNames, readBuffer,
+            addClassNamesToDependencySet(dependencyClassNames, byteBuffer,
                     strStart, strSize);
         }
-        readBuffer.position(strStart + strSize);
+        byteBuffer.position(strStart + strSize);
     }
 
     /**
-     * @param readBuffer
+     * @param byteBuffer
      * @param isNamedType
      */
-    private static void flagFieldsAndMethodsAsNamedTypes(ByteBuffer readBuffer,
+    private static void flagFieldsAndMethodsAsNamedTypes(ByteBuffer byteBuffer,
                                                          BitSet isNamedType) {
         for (int type = 0; type < 2; type++) { // fields and methods
-            int numMember = readBuffer.getChar();
+            int numMember = byteBuffer.getChar();
             for (int member = 0; member < numMember; member++) {
-                skipBytes(readBuffer, 4);
-                isNamedType.set(readBuffer.getChar());
-                int numAttr = readBuffer.getChar();
+                skipBytes(byteBuffer, 4);
+                isNamedType.set(byteBuffer.getChar());
+                int numAttr = byteBuffer.getChar();
                 for (int attr = 0; attr < numAttr; attr++) {
-                    skipBytes(readBuffer, 2);
-                    readBuffer.position(readBuffer.getInt()
-                            + readBuffer.position());
+                    skipBytes(byteBuffer, 2);
+                    byteBuffer.position(byteBuffer.getInt()
+                            + byteBuffer.position());
                 }
             }
         }
     }
 
     /**
-     * @param readBuffer
+     * @param byteBuffer
      */
-    private static void returnBufferToStartOfConstantPool(ByteBuffer readBuffer) {
-        readBuffer.position(10);
+    private static void returnBufferToStartOfConstantPool(ByteBuffer byteBuffer) {
+        byteBuffer.position(10);
     }
 
     /**
-     * @param readBuffer
+     * @param byteBuffer
      * @param currentConstantIndex
      * @return
      */
     private static int readOneConstantPoolItemAndSetFlagIfClassOrNamedType(
-            ByteBuffer readBuffer, ConstantPoolItemFlags flags,
+            ByteBuffer byteBuffer, ConstantPoolItemFlags flags,
             int currentConstantIndex) {
-        switch (readBuffer.get()) {
+        switch (byteBuffer.get()) {
             case ConstantPoolTags.CONSTANT_Utf8:
-                skipPastVariableLengthString(readBuffer);
+                skipPastVariableLengthString(byteBuffer);
                 break;
             case ConstantPoolTags.CONSTANT_Integer:
             case ConstantPoolTags.CONSTANT_Float:
@@ -228,61 +228,61 @@ public class JDependencyChisel {
             case ConstantPoolTags.CONSTANT_Methodref:
             case ConstantPoolTags.CONSTANT_InterfaceMethodref:
             case ConstantPoolTags.CONSTANT_InvokeDynamic:
-                skipBytes(readBuffer, 4);
+                skipBytes(byteBuffer, 4);
                 break;
             case ConstantPoolTags.CONSTANT_Long:
             case ConstantPoolTags.CONSTANT_Double:
-                skipBytes(readBuffer, 8);
+                skipBytes(byteBuffer, 8);
                 currentConstantIndex++;
                 break;
             case ConstantPoolTags.CONSTANT_String:
-                skipBytes(readBuffer, 2);
+                skipBytes(byteBuffer, 2);
                 break;
             case ConstantPoolTags.CONSTANT_NameAndType:
-                skipBytes(readBuffer, 2);// skip name, fall through to flag as a
+                skipBytes(byteBuffer, 2);// skip name, fall through to flag as a
                 // named type:
             case ConstantPoolTags.CONSTANT_MethodType:
-                flags.isNamedType.set(readBuffer.getChar()); // flag as named type
+                flags.isNamedType.set(byteBuffer.getChar()); // flag as named type
                 break;
             case ConstantPoolTags.CONSTANT_Class:
-                flags.isClass.set(readBuffer.getChar()); // flag as class
+                flags.isClass.set(byteBuffer.getChar()); // flag as class
                 break;
             case ConstantPoolTags.CONSTANT_MethodHandle:
-                skipBytes(readBuffer, 3);
+                skipBytes(byteBuffer, 3);
                 break;
             default:
                 throw new IllegalArgumentException("constant pool item type "
-                        + (readBuffer.get(readBuffer.position() - 1) & 0xff));
+                        + (byteBuffer.get(byteBuffer.position() - 1) & 0xff));
         }
         return currentConstantIndex;
     }
 
-    private static void skipBytes(ByteBuffer readBuffer, int bytesToSkip) {
-        readBuffer.position(readBuffer.position() + bytesToSkip);
+    private static void skipBytes(ByteBuffer byteBuffer, int bytesToSkip) {
+        byteBuffer.position(byteBuffer.position() + bytesToSkip);
     }
 
-    private static void skipPastVariableLengthString(ByteBuffer readBuffer) {
-        readBuffer.position(readBuffer.getChar() + readBuffer.position());
+    private static void skipPastVariableLengthString(ByteBuffer byteBuffer) {
+        byteBuffer.position(byteBuffer.getChar() + byteBuffer.position());
     }
 
     private static void setCursorToConstantPoolCountPosition(
-            ByteBuffer readBuffer) {
-        readBuffer.position(8);
+            ByteBuffer byteBuffer) {
+        byteBuffer.position(8);
     }
 
-    private static void verifyMagicFileTypeHeader(ByteBuffer readBuffer) {
-        if (readBuffer.getInt() != 0xcafebabe) {
+    private static void verifyMagicFileTypeHeader(ByteBuffer byteBuffer) {
+        if (byteBuffer.getInt() != 0xcafebabe) {
             throw new IllegalArgumentException("Not a class file");
         }
     }
 
     private static void addClassNameToDependencySet(HashSet<String> names,
-                                                    ByteBuffer readBuffer, int start, int length) {
+                                                    ByteBuffer byteBuffer, int start, int length) {
         final int end = start + length;
         StringBuilder dst = new StringBuilder(length);
         ascii: {
             for (; start < end; start++) {
-                byte b = readBuffer.get(start);
+                byte b = byteBuffer.get(start);
                 if (b < 0) {
                     break ascii;
                 }
@@ -291,10 +291,10 @@ public class JDependencyChisel {
             names.add(dst.toString());
             return;
         }
-        final int oldLimit = readBuffer.limit(), oldPos = dst.length();
-        readBuffer.limit(end).position(start);
-        dst.append(StandardCharsets.UTF_8.decode(readBuffer));
-        readBuffer.limit(oldLimit);
+        final int oldLimit = byteBuffer.limit(), oldPos = dst.length();
+        byteBuffer.limit(end).position(start);
+        dst.append(StandardCharsets.UTF_8.decode(byteBuffer));
+        byteBuffer.limit(oldLimit);
         for (int pos = oldPos, len = dst.length(); pos < len; pos++) {
             if (dst.charAt(pos) == '/') {
                 dst.setCharAt(pos, '.');
@@ -305,15 +305,15 @@ public class JDependencyChisel {
     }
 
     private static void addClassNamesToDependencySet(HashSet<String> names,
-                                                     ByteBuffer readBuffer, int start, int length) {
+                                                     ByteBuffer byteBuffer, int start, int length) {
         final int end = start + length;
         for (; start < end; start++) {
-            if (readBuffer.get(start) == 'L') {
+            if (byteBuffer.get(start) == 'L') {
                 int endMarkerPosition = start + 1;
-                while (readBuffer.get(endMarkerPosition) != ';') {
+                while (byteBuffer.get(endMarkerPosition) != ';') {
                     endMarkerPosition++;
                 }
-                addClassNameToDependencySet(names, readBuffer, start + 1,
+                addClassNameToDependencySet(names, byteBuffer, start + 1,
                         calculateLength(start, endMarkerPosition));
                 start = endMarkerPosition;
             }
