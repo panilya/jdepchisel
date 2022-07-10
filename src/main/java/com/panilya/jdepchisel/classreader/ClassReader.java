@@ -11,23 +11,23 @@ public class ClassReader {
 
     // Specify directory to search in
     // TODO: Implement CLI
-    Path baseDirectory = Path.of("/home/sigma_male/dev/programs/jdepchisel/target/classes/com/panilya/jdepchisel/constantpool/");
+//    Path baseDirectory = Path.of("/home/sigma_male/dev/programs/jdepchisel/target/classes/com/panilya/jdepchisel/constantpool/");
 
     public ClassReader() { }
 
     public static ByteBuffer readClassBytes(Class<?> from) throws IOException {
-        ConstantPoolReader.Buffer readBuf = new ConstantPoolReader.Buffer();
+        ConstantPoolReader.Buffer buffer = new ConstantPoolReader.Buffer();
         try (InputStream is = from.getResourceAsStream(from.getSimpleName()
                 + ".class")) {
             int byteCountFromLastRead = 0;
             do {
-                readBuf.read += byteCountFromLastRead;
-                adjustBufferSize(readBuf, is);
-                byteCountFromLastRead = is.read(readBuf.buf, readBuf.read,
-                        readBuf.buf.length - readBuf.read);
+                buffer.read += byteCountFromLastRead;
+                adjustBufferSize(buffer, is);
+                byteCountFromLastRead = is.read(buffer.buf, buffer.read,
+                        buffer.buf.length - buffer.read);
             } while (byteCountFromLastRead > 0);
         }
-        return readBuf.toByteBuffer();
+        return buffer.toByteBuffer();
     }
 
     private static void adjustBufferSize(ConstantPoolReader.Buffer readBuf, InputStream is)

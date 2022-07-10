@@ -12,7 +12,7 @@ public class DependencyGraphCreator {
         List<DependencyGraph.DependencyGraphNode> classesToProcess = new ArrayList<>();
         Map<String, DependencyGraph.DependencyGraphNode> processedClasses = new HashMap<>();
 
-        Set<Class<?>> classes = getDependencies(rootClass);
+        Set<Class<?>> classes = listDependencies(rootClass);
         classesToProcess.add(new DependencyGraph.DependencyGraphNode(new ClassFile(classes, rootClass)));
 
         while (classesToProcess.size() > 0) {
@@ -20,16 +20,16 @@ public class DependencyGraphCreator {
 
             if (graphNode.isProcessed) continue;
 
-            graphNode.isProcessed = true;
+            setIsProcessed(graphNode);
 
-            Set<Class<?>> dependencies = getDependencies(graphNode.classFile.className);
+            Set<Class<?>> dependencies = listDependencies(graphNode.classFile.getClassName());
 
             for (Class<?> dependency : dependencies) {
                 if (dependency.getName().contains("$")) continue; // Very bad smell
                 if (!dependency.getName().startsWith("com.panilya")) continue; // Isn't better smell
                 DependencyGraph.DependencyGraphNode classNode = checkClassNode(dependency.getName(), processedClasses);
 
-                if (classNode.classFile.className.equals(graphNode.classFile.className)) continue;
+                if (classNode.classFile.getClassName().equals(graphNode.classFile.getClassName())) continue;
 
                 if (!classNode.isProcessed) {
                     classesToProcess.add(classNode);
@@ -41,15 +41,19 @@ public class DependencyGraphCreator {
         return new DependencyGraph(processedClasses);
     }
 
+    private void setIsProcessed(DependencyGraph.DependencyGraphNode node) {
+        node.isProcessed = true;
+    }
+
     private DependencyGraph.DependencyGraphNode checkClassNode(String className, Map<String, DependencyGraph.DependencyGraphNode> processedClasses) {
         if (processedClasses.containsKey(className)) return processedClasses.get(className);
-        Set<Class<?>> dependencies = getDependencies(className);
+        Set<Class<?>> dependencies = listDependencies(className);
         DependencyGraph.DependencyGraphNode dependencyGraphNode = new DependencyGraph.DependencyGraphNode(new ClassFile(dependencies, className));
         processedClasses.put(className, dependencyGraphNode);
         return dependencyGraphNode;
     }
 
-    private Set<Class<?>> getDependencies(String className) {
+    private Set<Class<?>> listDependencies(String className) {
         try {
             return ConstantPoolReader.getDependencies(Class
                     .forName(className));
@@ -57,5 +61,4 @@ public class DependencyGraphCreator {
             throw new RuntimeException(e);
         }
     }
-
 }

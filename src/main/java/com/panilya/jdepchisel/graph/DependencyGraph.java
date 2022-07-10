@@ -8,12 +8,17 @@ import java.util.Map;
 
 public class DependencyGraph {
 
-    public final Map<String, DependencyGraphNode> processedClasses;
+    private final Map<String, DependencyGraphNode> processedClasses;
 
     public DependencyGraph(Map<String, DependencyGraphNode> processedClasses) {
         this.processedClasses = processedClasses;
     }
 
+    public Map<String, DependencyGraphNode> getProcessedClasses() {
+        return processedClasses;
+    }
+
+    // mb private access?
     public static class DependencyGraphNode {
         public ClassFile classFile;
         public boolean isProcessed;
@@ -23,5 +28,4 @@ public class DependencyGraph {
             this.classFile = classFile;
         }
     }
-
 }
