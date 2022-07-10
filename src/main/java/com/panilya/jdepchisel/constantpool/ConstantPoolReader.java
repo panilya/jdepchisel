@@ -12,6 +12,8 @@ import com.panilya.jdepchisel.classreader.ClassReader;
 
 public class ConstantPoolReader {
 
+    private static final int MAGIC_HEADER = 0xcafebabe;
+
     /**
      * Get the set of direct dependencies for the given class
      *
@@ -238,7 +240,7 @@ public class ConstantPoolReader {
     }
 
     private static void verifyMagicFileTypeHeader(ByteBuffer byteBuffer) {
-        if (byteBuffer.getInt() != 0xcafebabe) {
+        if (byteBuffer.getInt() != MAGIC_HEADER) {
             throw new IllegalArgumentException("Not a class file");
         }
     }
