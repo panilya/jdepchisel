@@ -25,7 +25,7 @@ public class DependencyGraphCreator {
             Set<Class<?>> dependencies = listDependencies(graphNode.classFile.getClassName());
 
             for (Class<?> dependency : dependencies) {
-                if (dependency.getName().contains("$")) continue; // Very bad smell
+                if (dependency.getName().contains("$")) continue; // Very bad smell. TODO: implement support for inner classes
                 if (!dependency.getName().startsWith("com.panilya")) continue; // Isn't better smell
                 DependencyGraph.DependencyGraphNode classNode = checkClassNode(dependency.getName(), processedClasses);
 
