@@ -12,11 +12,11 @@ public class GraphvizGenerator {
             stringBuilder.append("digraph classDependencies {" + "\n");
             for (var classNodeEntry : dependencyGraph.getProcessedClasses().entrySet()) {
                 var className = classNodeEntry.getKey();
-                var classValue = classNodeEntry.getValue().dependsOn;
+                var classValue = classNodeEntry.getValue().getDependsOn();
                 for (var depends : classValue) {
                     // Prints output in DOT language in order to display Dependency Graph in Graphviz
                     stringBuilder.append("  \"").append(className).append("\" -> \"")
-                            .append(depends.classFile.getClassName()).append("\";").append("\n");
+                            .append(depends.getClassFile().getClassName()).append("\";").append("\n");
                 }
             }
             stringBuilder.append("}").append("\n").append("https://sketchviz.com/new" + "Graphviz Online Visualizer in order to see graph");

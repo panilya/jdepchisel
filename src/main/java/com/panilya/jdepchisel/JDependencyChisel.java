@@ -5,6 +5,6 @@ import com.panilya.jdepchisel.graph.GraphvizGenerator;
 public class JDependencyChisel {
 
     public static void main(String[] args) {
-        GraphvizGenerator.generateOutput("com.panilya.jdepchisel.JDependencyChisel");
+        GraphvizGenerator.generateOutput("com.panilya.jdepchisel.graph.GraphvizGenerator");
     }
 }

@@ -18,23 +18,23 @@ public class DependencyGraphCreator {
         while (classesToProcess.size() > 0) {
             DependencyGraph.DependencyGraphNode graphNode = classesToProcess.remove(classesToProcess.size() - 1);
 
-            if (graphNode.isProcessed) continue;
+            if (graphNode.isProcessed()) continue;
 
             setIsProcessed(graphNode);
 
-            Set<Class<?>> dependencies = listDependencies(graphNode.classFile.getClassName());
+            Set<Class<?>> dependencies = listDependencies(graphNode.getClassFile().getClassName());
 
             for (Class<?> dependency : dependencies) {
                 if (dependency.getName().contains("$")) continue; // Very bad smell. TODO: implement support for inner classes
                 if (!dependency.getName().startsWith("com.panilya")) continue; // Isn't better smell
                 DependencyGraph.DependencyGraphNode classNode = checkClassNode(dependency.getName(), processedClasses);
 
-                if (classNode.classFile.getClassName().equals(graphNode.classFile.getClassName())) continue;
+                if (classNode.getClassFile().getClassName().equals(graphNode.getClassFile().getClassName())) continue;
 
-                if (!classNode.isProcessed) {
+                if (!classNode.isProcessed()) {
                     classesToProcess.add(classNode);
                 }
-                graphNode.dependsOn.add(classNode);
+                graphNode.getDependsOn().add(classNode);
             }
         }
 
@@ -42,7 +42,7 @@ public class DependencyGraphCreator {
     }
 
     private void setIsProcessed(DependencyGraph.DependencyGraphNode node) {
-        node.isProcessed = true;
+        node.setProcessed(true);
     }
 
     private DependencyGraph.DependencyGraphNode checkClassNode(String className, Map<String, DependencyGraph.DependencyGraphNode> processedClasses) {

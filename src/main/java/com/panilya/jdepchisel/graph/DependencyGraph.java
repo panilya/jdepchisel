@@ -18,14 +18,29 @@ public class DependencyGraph {
         return processedClasses;
     }
 
-    // mb private access?
     public static class DependencyGraphNode {
-        public ClassFile classFile;
-        public boolean isProcessed;
-        public List<DependencyGraphNode> dependsOn = new ArrayList<>();
+        private final ClassFile classFile;
+        private boolean isProcessed;
+        private List<DependencyGraphNode> dependsOn = new ArrayList<>();
 
         public DependencyGraphNode(ClassFile classFile) {
             this.classFile = classFile;
+        }
+
+        public ClassFile getClassFile() {
+            return classFile;
+        }
+
+        public boolean isProcessed() {
+            return isProcessed;
+        }
+
+        public void setProcessed(boolean processed) {
+            isProcessed = processed;
+        }
+
+        public List<DependencyGraphNode> getDependsOn() {
+            return dependsOn;
         }
     }
 }
